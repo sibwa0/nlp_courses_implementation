@@ -19,7 +19,9 @@ def reduce_to_k_dim(matrix, k=100):
     """
     n_iters = 10
 
-    # your code here
+    svd = TruncatedSVD(n_components=k, n_iter=n_iters)
+
+    reduced_matrix = svd.fit_transform(matrix)
 
     return reduced_matrix
 
@@ -40,8 +42,12 @@ class CoOccurenceEmbeddings(BaseEmbeddings):
     def __init__(self, corpus, distinct_words=None, window_size=5, vector_size=100, min_count=10):
         super().__init__(corpus, vector_size=vector_size, distinct_words=distinct_words, min_count=min_count)
 
+        # if distinct_words == None:
+        #     self.distinct_words, _ = get_distinct_words(corpus, min_count=min_count)
+        # else:
+        #     self.distinct_words = distinct_words
         self.matrix = self.compute_co_occurrence_matrix(corpus, window_size=window_size)
-        # self.vectors = reduce_to_k_dim(self.matrix, k=self.vector_size)
+        self.vectors = reduce_to_k_dim(self.matrix, k=self.vector_size)
 
     
     def compute_co_occurrence_matrix(self, corpus, window_size=5):
@@ -60,9 +66,8 @@ class CoOccurenceEmbeddings(BaseEmbeddings):
 
             return appendix + text + appendix
 
-        words, _ = get_distinct_words(corpus, min_count=2)
-        token_to_ind = {word: i for i, word in enumerate(words)}
-        matrix = np.zeros((len(words), len(words)))
+        token_to_ind = {word: i for i, word in enumerate(self.index_to_key)}
+        matrix = np.zeros((len(self.index_to_key), len(self.index_to_key)))
 
         for text in corpus:
             text = pad_text(text, window_size=window_size, pad="UNK")

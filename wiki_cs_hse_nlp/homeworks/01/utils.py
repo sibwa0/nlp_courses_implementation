@@ -99,7 +99,12 @@ def eval_simlex(model: KeyedVectors):
     """
     simlex = pd.read_csv('simlex911.csv')
     sims = []
+    print(len(model.index_to_key))
+
     for row in simlex.iterrows():
+        if row[1]["word1"] not in model.index_to_key or row[1]["word2"] not in model.index_to_key:
+            continue
+
         embed1 = model.get_vector(row[1]['word1'])
         embed2 = model.get_vector(row[1]['word2'])
 
