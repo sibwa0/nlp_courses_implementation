@@ -1,10 +1,12 @@
 import numpy as np
+import numba
 
 from sklearn.decomposition import TruncatedSVD
 from gensim.models import KeyedVectors
 from utils import get_distinct_words
 from nltk import ngrams
 from collections import Counter
+from scipy.sparse import coo_matrix
 
 
 def reduce_to_k_dim(matrix, k=100):
@@ -21,7 +23,7 @@ def reduce_to_k_dim(matrix, k=100):
 
     svd = TruncatedSVD(n_components=k, n_iter=n_iters)
 
-    reduced_matrix = svd.fit_transform(matrix)
+    reduced_matrix = svd.fit_transform(coo_matrix(matrix))
 
     return reduced_matrix
 
@@ -42,14 +44,9 @@ class CoOccurenceEmbeddings(BaseEmbeddings):
     def __init__(self, corpus, distinct_words=None, window_size=5, vector_size=100, min_count=10):
         super().__init__(corpus, vector_size=vector_size, distinct_words=distinct_words, min_count=min_count)
 
-        # if distinct_words == None:
-        #     self.distinct_words, _ = get_distinct_words(corpus, min_count=min_count)
-        # else:
-        #     self.distinct_words = distinct_words
         self.matrix = self.compute_co_occurrence_matrix(corpus, window_size=window_size)
         self.vectors = reduce_to_k_dim(self.matrix, k=self.vector_size)
 
-    
     def compute_co_occurrence_matrix(self, corpus, window_size=5):
         """
         compute co-occurrence matrix for the given corpus and window_size.
@@ -67,7 +64,7 @@ class CoOccurenceEmbeddings(BaseEmbeddings):
             return appendix + text + appendix
 
         token_to_ind = {word: i for i, word in enumerate(self.index_to_key)}
-        matrix = np.zeros((len(self.index_to_key), len(self.index_to_key)))
+        matrix = np.zeros((len(self.index_to_key), len(self.index_to_key)), dtype=np.int32)
 
         for text in corpus:
             text = pad_text(text, window_size=window_size, pad="UNK")
@@ -105,9 +102,15 @@ class PPMIEmbeddings(CoOccurenceEmbeddings, BaseEmbeddings):
               use natural logarithm
         """
 
-        ppmi_matrix = np.zeros((len(self), len(self)))
-        
-        # your code here
+        ppmi_matrix = np.zeros((len(self.index_to_key), len(self.index_to_key)), dtype=np.float32)
+
+        counts = np.array(list(self.word_counter.values()))
+
+        ratio = co_occurrence_matrix * sum(self.word_counter.values()) / np.outer( counts, counts )
+        ratio[ratio == 0] = 1e-5
+
+        ppmi_matrix = np.log(ratio)
+        ppmi_matrix[ppmi_matrix < 0] = 0
 
         return ppmi_matrix
 

@@ -68,9 +68,9 @@ def get_distinct_words(corpus, min_count=10):
 
     word_counter = word_counter.most_common(index)
     words = [elem[0] for elem in word_counter]
-    word_counter_dct = {elem[0]: elem[1] for elem in word_counter}
+    new_word_counter = Counter({elem[0]: elem[1] for elem in word_counter})
 
-    return words, word_counter_dct
+    return words, new_word_counter
 
 
 def plot_embeddings(reduced_matrix, token=None, radius=10, alpha=0.25, show=True, color='blue'):
@@ -93,17 +93,14 @@ def plot_embeddings(reduced_matrix, token=None, radius=10, alpha=0.25, show=True
     return fig
 
 
-def eval_simlex(model: KeyedVectors):
+def eval_simlex(model: KeyedVectors, filename="simlex911"):
     """
     calculates Spearman's correlation between humans' and model's similarity predictions
     """
-    simlex = pd.read_csv('simlex911.csv')
+    simlex = pd.read_csv(f'{filename}.csv')
     sims = []
-    print(len(model.index_to_key))
 
     for row in simlex.iterrows():
-        if row[1]["word1"] not in model.index_to_key or row[1]["word2"] not in model.index_to_key:
-            continue
 
         embed1 = model.get_vector(row[1]['word1'])
         embed2 = model.get_vector(row[1]['word2'])
