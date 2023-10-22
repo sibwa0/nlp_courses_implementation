@@ -7,7 +7,7 @@ from utils import get_distinct_words
 from nltk import ngrams
 from collections import Counter
 from scipy.sparse import coo_matrix
-
+import torch
 
 def reduce_to_k_dim(matrix, k=100):
     """ 
@@ -128,7 +128,7 @@ class Word2Vec(BaseEmbeddings):
         self.n_negative = n_negative
         self.alpha = 0.001
         
-        self.center_W = ... # your code here
+        self.center_W = torch.randn((self.index_to_key, vector_size))  # your code here
         self.context_W = ... # your code here
         
         self.train(n_epoches)
