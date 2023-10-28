@@ -41,7 +41,7 @@ def read_corpus(lang: str):
         list of lists, with tokenized words from the corpus
     """
 
-    assert lang in ['ru', 'be', "ru_copy"]
+    assert lang in ['ru', 'be', "ru_copy", "be_copy"]
 
     m = Mystem()
     texts = pd.read_csv(f'{lang}.csv')['text']
