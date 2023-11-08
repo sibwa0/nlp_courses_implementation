@@ -1,15 +1,20 @@
+import enum
 from nltk.tokenize import WordPunctTokenizer 
 from collections import Counter
 from itertools import chain
 import nltk
 
 
-class BPE():
-    def __init__(self, vocab_size):
+class my_BPE():
+    def __init__(self,
+                 vocab_size=30_000,
+                 special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]):
         self.vocab_size = vocab_size
+        self.special_tokens = special_tokens
 
-    def init_vocab(self, corpus: list):
-        tokens_vocab = set( "".join(list(chain.from_iterable(corpus))))
+
+    def train(self, corpus: list):
+        tokens_vocab = set( "".join(list(chain.from_iterable(corpus))) )
 
         words_counter = Counter( list(chain.from_iterable(corpus)) )
 
@@ -42,16 +47,53 @@ class BPE():
                             new_tokens_repeat[i] = tokens_repeat
 
                             break
+        
+        tokens_vocab = tokens_vocab.union( self.special_tokens )
+        self.token_to_ind = { token: ind for ind, token in enumerate(tokens_vocab) }
+        self.ind_to_token = { ind: token for ind, token in enumerate(tokens_vocab) }
 
-        return tokens_vocab 
+
+    def encode(self, string: str):
+        ids = []
+
+        for word in string.split():
+        
+            start = 0
+            while start != len(word):
+                
+                end = len(word)
+                while word[start : end] not in self.token_to_ind and end > start:
+                    end -= 1
+                
+                if start == end:
+                    ids.append( self.token_to_ind["[UNK]"] )
+                    start += 1
+                else:
+                    ids.append( self.token_to_ind[word[start : end]] )
+                    start = end
+
+        return ids
+    
+
+    def decode(self, ids: list):
+        tokens = [self.ind_to_token[id] for id in ids]
+
+        return tokens
+
 
 if __name__ == "__main__":
     corpus = [["мама", "мыла", "раму", "мама"],
               ["муха", "выла", "лая"]]
 
-    bpe = BPE(vocab_size=15)
+    bpe = my_BPE(vocab_size=15)
 
-    print(bpe.init_vocab(corpus))
+    bpe.train(corpus)
+
+    ids = bpe.encode("мама мыла )рамув") 
+
+    print( ids )
+
+    print( bpe.decode(ids) )
 
     
 
